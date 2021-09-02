@@ -1,5 +1,10 @@
 package models
 
+import (
+	"github.com/jinzhu/gorm"
+	"time"
+)
+
 type Tag struct {
 	Model
 
@@ -9,8 +14,21 @@ type Tag struct {
 	ModifiedBy string `json:"modified_by"`
 }
 
+// 修改表名
 func (Tag) TableName() string {
 	return "tags"
+}
+
+// 创建新的标签前：
+//   设置创建时间为当前时间
+func (tag *Tag) BeforeCreate(scope *gorm.Scope) error {
+	return scope.SetColumn("created_at", time.Now().Unix())
+}
+
+// 更新标签前：
+//   设置更新时间为当前时间
+func (tag *Tag) BeforeUpdate(scope *gorm.Scope) error {
+	return scope.SetColumn("modified_at", time.Now().Unix())
 }
 
 // 查询文章标签列表
