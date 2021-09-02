@@ -12,7 +12,7 @@ var db *gorm.DB
 
 type Model struct {
 	ID int `gorm:"primary_key" json:"id"`
-	CreateAt int `json:"created_at"`
+	CreatedAt int `json:"created_at"`
 	ModifiedAt int `json:"modified_at"`
 }
 
@@ -25,10 +25,11 @@ func init() {
 	db, err = gorm.Open(
 		sec.Key("TYPE").String(),
 		fmt.Sprintf(
-			"%s:%s@tcp(%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
+			"%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
 			sec.Key("USER").String(),
 			sec.Key("PASSWORD").String(),
 			sec.Key("HOST").String(),
+			sec.Key("PORT").String(),
 			sec.Key("NAME").String(),
 		),
 	)
