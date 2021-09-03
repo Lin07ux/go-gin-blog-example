@@ -11,5 +11,7 @@ const (
 
 	ErrorAuthCheckTokenFail    = 20001
 	ErrorAuthCheckTokenTimeout = 20002
-	ErrorAuthToken             = 2003
+	ErrorAuthTokenGenerate     = 2003
+	ErrorAuthToken             = 2004
+	ErrorAuth                  = 2005
 )

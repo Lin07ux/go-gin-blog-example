@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/lin07ux/go-gin-example/middleware/jwt"
 	"github.com/lin07ux/go-gin-example/pkg/setting"
+	"github.com/lin07ux/go-gin-example/routers/api"
 	v1 "github.com/lin07ux/go-gin-example/routers/v1"
 )
 
@@ -14,6 +15,8 @@ func InitRouter() *gin.Engine {
 
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
+
+	r.POST("/auth", api.GetAuth)
 
 	apiV1 := r.Group("/api/v1")
 	apiV1.Use(jwt.JWT())
