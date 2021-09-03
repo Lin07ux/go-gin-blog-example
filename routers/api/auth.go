@@ -5,6 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/lin07ux/go-gin-example/models"
 	"github.com/lin07ux/go-gin-example/pkg/e"
+	"github.com/lin07ux/go-gin-example/pkg/logging"
 	"github.com/lin07ux/go-gin-example/pkg/util"
 	"net/http"
 )
@@ -48,6 +49,9 @@ func validateCredentials(username, password string) (bool, string) {
 	valid.MaxSize(password, 50, "password").Message("登录密码最长为 50 个字符")
 
 	if valid.HasErrors() {
+		for _, err := range valid.Errors {
+			logging.Info(err.Key, err.Message)
+		}
 		return false, valid.Errors[0].Message
 	}
 

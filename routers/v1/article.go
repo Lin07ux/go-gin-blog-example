@@ -5,6 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/lin07ux/go-gin-example/models"
 	"github.com/lin07ux/go-gin-example/pkg/e"
+	"github.com/lin07ux/go-gin-example/pkg/logging"
 	"github.com/lin07ux/go-gin-example/pkg/setting"
 	"github.com/lin07ux/go-gin-example/pkg/util"
 	"github.com/unknwon/com"
@@ -186,6 +187,9 @@ func validateCreateArticleData(article *models.Article) (bool, string) {
 	valid.Range(article.State, 0, 1, "state").Message("文章状态只能为 0、1")
 
 	if valid.HasErrors() {
+		for _, err := range valid.Errors {
+			logging.Info(err.Key, err.Message)
+		}
 		return false, valid.Errors[0].Message
 	}
 
@@ -207,6 +211,9 @@ func validateUpdateArticleData(id int, article *models.Article) (bool, string) {
 	}
 
 	if valid.HasErrors() {
+		for _, err := range valid.Errors {
+			logging.Info(err.Key, err.Message)
+		}
 		return false, valid.Errors[0].Message
 	}
 

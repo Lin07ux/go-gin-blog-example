@@ -5,6 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/lin07ux/go-gin-example/models"
 	"github.com/lin07ux/go-gin-example/pkg/e"
+	"github.com/lin07ux/go-gin-example/pkg/logging"
 	"github.com/lin07ux/go-gin-example/pkg/setting"
 	"github.com/lin07ux/go-gin-example/pkg/util"
 	"github.com/unknwon/com"
@@ -141,6 +142,9 @@ func validateCreateTagData(name string, state int, createdBy string) (bool, stri
 	valid.Range(state, 0, 1, "state").Message("状态只允许为 0、1")
 
 	if valid.HasErrors() {
+		for _, err := range valid.Errors {
+			logging.Info(err.Key, err.Message)
+		}
 		return false, valid.Errors[0].Message
 	}
 
@@ -161,6 +165,9 @@ func validateUpdateTagData(id int, state int, name string, modifiedBy string) (b
 	}
 
 	if valid.HasErrors() {
+		for _, err := range valid.Errors {
+			logging.Info(err.Key, err.Message)
+		}
 		return false, valid.Errors[0].Message
 	}
 
