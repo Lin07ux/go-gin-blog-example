@@ -9,8 +9,7 @@ var MsgFlags = map[int]string {
 	ErrorNotExistArticle:       "该文章不存在",
 	ErrorAuthCheckTokenFail:    "Token 鉴权失败",
 	ErrorAuthCheckTokenTimeout: "Token 已超时",
-	ErrorAuthToken:             "Token 生成失败",
-	ErrorAuth:                  "Token 错误",
+	ErrorAuthToken:             "Token 错误",
 }
 
 func GetMsg(code int) string {
