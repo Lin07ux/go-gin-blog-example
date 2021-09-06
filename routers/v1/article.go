@@ -80,7 +80,15 @@ func GetArticle(c *gin.Context) {
 	})
 }
 
-// 添加文章
+// @Summary 添加文章
+// @Produce json
+// @Param title body string true "Title"
+// @Param desc body string true "Desc"
+// @Param content body string true "Content"
+// @Param state body int false "State"
+// @Param created_by body string true "CreatedBy"
+// @Success 200 {object} gin.H "{"code":200,"data":{},"msg":"ok"}"
+// @Router /api/v1/articles [post]
 func AddArticle(c *gin.Context) {
 	article := models.Article{
 		TagID:      com.StrTo(c.PostForm("tag_id")).MustInt(),
@@ -112,7 +120,15 @@ func AddArticle(c *gin.Context) {
 	})
 }
 
-// 编辑文章
+// @Summary 编辑文章
+// @Produce json
+// @Param id path int true "ID"
+// @Param title body string false "Name"
+// @Param desc body string false "Desc"
+// @Param content body string false "Content"
+// @Param modified_by body string true "ModifiedAt"
+// @Success 200 {object} gin.H "{"code":200,"data":{},"msg":"ok"}"
+// @Router /api/v1/articles/{id} [put]
 func EditArticle(c *gin.Context) {
 	id := com.StrTo(c.Param("id")).MustInt()
 	article := models.Article{
