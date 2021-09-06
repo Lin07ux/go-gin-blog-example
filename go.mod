@@ -18,6 +18,7 @@ require (
 	github.com/json-iterator/go v1.1.11 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-isatty v0.0.13 // indirect
+	github.com/robfig/cron v1.2.0
 	github.com/shiena/ansicolor v0.0.0-20200904210342-c7312218db18 // indirect
 	github.com/smartystreets/goconvey v1.6.4 // indirect
 	github.com/swaggo/files v0.0.0-20210815190702-a29dd2bc99b2

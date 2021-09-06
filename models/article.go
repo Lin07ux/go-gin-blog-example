@@ -89,3 +89,10 @@ func DeleteArticle(id int) bool {
 
 	return true
 }
+
+// 清理全部的已删除文章
+func CleanAllArticle() bool {
+	db.Unscoped().Where("deleted_at > ?", 0).Delete(&Article{})
+
+	return true
+}

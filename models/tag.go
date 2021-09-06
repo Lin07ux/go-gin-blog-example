@@ -70,3 +70,10 @@ func DeleteTag(id int) bool {
 
 	return true
 }
+
+// 清理全部的已删除标签
+func CleanAllTag() bool {
+	db.Unscoped().Where("deleted_at > ?", 0).Delete(&Tag{})
+
+	return true
+}
