@@ -1,10 +1,5 @@
 package models
 
-import (
-	"github.com/jinzhu/gorm"
-	"time"
-)
-
 type Article struct {
 	Model
 
@@ -22,16 +17,6 @@ type Article struct {
 // 数据表名
 func (Article) TableName() string {
 	return "articles"
-}
-
-// 创建前设置创建时间
-func (article *Article) BeforeCreate(scope *gorm.Scope) error {
-	return scope.SetColumn("created_at", time.Now().Unix())
-}
-
-// 更新前设置更新时间
-func (article *Article) BeforeUpdate(scope *gorm.Scope) error {
-	return scope.SetColumn("modified_at", time.Now().Unix())
 }
 
 // 使用 ID 判断文章是否存在
