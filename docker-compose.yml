@@ -1,0 +1,26 @@
+version: '3.8'
+services:
+  mysql:
+    image: mysql:latest
+    container_name: mysql
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_ROOT_PASSWORD: secret
+    volumes:
+      - ./database/data:/var/lib/mysql
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - gonet
+
+  go:
+    build: .
+    ports:
+      - "8000:8000"
+    networks:
+      - gonet
+    depends_on:
+      - mysql
+
+networks:
+  gonet:
+    driver: bridge
