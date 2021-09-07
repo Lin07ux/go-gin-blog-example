@@ -4,8 +4,8 @@ import (
 	"github.com/astaxie/beego/validation"
 	"github.com/gin-gonic/gin"
 	"github.com/lin07ux/go-gin-example/models"
+	"github.com/lin07ux/go-gin-example/pkg/app"
 	"github.com/lin07ux/go-gin-example/pkg/e"
-	"github.com/lin07ux/go-gin-example/pkg/logging"
 	"github.com/lin07ux/go-gin-example/pkg/setting"
 	"github.com/lin07ux/go-gin-example/pkg/util"
 	"github.com/unknwon/com"
@@ -14,6 +14,7 @@ import (
 
 // 获取多个文章标签
 func GetTags(c *gin.Context) {
+	response := app.Response{C:c}
 	maps := make(map[string]interface{})
 	data := make(map[string]interface{})
 
@@ -25,115 +26,86 @@ func GetTags(c *gin.Context) {
 		maps["state"] = com.StrTo(state).MustInt()
 	}
 
-	code := e.Success
 	data["lists"] = models.GetTags(util.GetPage(c), setting.AppSetting.PageSize, maps)
 	data["total"] = models.GetTagTotal(maps)
 
-	c.JSON(http.StatusOK, gin.H{
-		"code": code,
-		"msg": e.GetMsg(code),
-		"data": data,
-	})
+	response.Send(e.Success, "", data)
 }
 
 // 新增文章标签
 func AddTag(c *gin.Context) {
+	response := app.Response{C:c}
 	name := c.PostForm("name")
 	state := com.StrTo(c.DefaultPostForm("state", "0")).MustInt()
 	createdBy := c.PostForm("created_by")
 
-	code := e.InvalidParams
-	msg := ""
-
-	result, message := validateCreateTagData(name, state, createdBy)
-	if result {
-		if ! models.ExistTagByName(name) {
-			code = e.Success
-			models.AddTag(name, state, createdBy)
-		} else {
-			code = e.ErrorExistTag
-		}
-		msg = e.GetMsg(code)
-	} else {
-		msg = message
+	if message := validateCreateTagData(name, state, createdBy); message != "" {
+		response.SetStatus(http.StatusUnprocessableEntity).Send(e.InvalidParams, message, nil)
+		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"code": code,
-		"msg": msg,
-		"data": make(map[string]string),
-	})
+	if models.ExistTagByName(name) {
+		response.SetStatus(http.StatusPreconditionFailed).Send(e.ErrorExistTag, "", nil)
+	} else {
+		id := models.AddTag(name, state, createdBy)
+		response.Send(e.Success, "", map[string]int{"id": id})
+	}
 }
 
 // 修改文章标签
 func EditTag(c *gin.Context) {
+	response := app.Response{C:c}
 	id := com.StrTo(c.Param("id")).MustInt()
-	state := com.StrTo(c.DefaultPostForm("state", "-1")).MustInt()
-	name := c.PostForm("name")
-	modifiedBy := c.PostForm("modified_by")
-
-	code := e.InvalidParams
-	msg := ""
-
-	result, message := validateUpdateTagData(id, state, name, modifiedBy)
-	if result {
-		if models.ExistTagById(id) {
-			data := make(map[string]interface{})
-			data["modified_by"] = modifiedBy
-			if name != "" {
-				data["name"] = name
-			}
-			if state >= 0 {
-				data["state"] = state
-			}
-			models.EditTag(id, data)
-			code = e.Success
-		} else {
-			code = e.ErrorNotExistTag
-		}
-		msg = e.GetMsg(code)
-	} else {
-		msg = message
+	tag := &models.Tag{
+		Name:       c.PostForm("name"),
+		State:      com.StrTo(c.DefaultPostForm("state", "-1")).MustInt(),
+		ModifiedBy: c.PostForm("modified_by"),
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"code": code,
-		"msg": msg,
-		"data": make(map[string]string),
-	})
+	if message := validateUpdateTagData(id, tag); message != "" {
+		response.SetStatus(http.StatusUnprocessableEntity).Send(e.InvalidParams, message, nil)
+		return
+	}
+
+	tagModel := models.GetTagById(id)
+	if tagModel.ID <= 0 {
+		response.SetStatus(http.StatusPreconditionFailed).Send(e.ErrorNotExistTag, "", nil)
+		return
+	}
+
+	if tagModel.Name != tag.Name && models.ExistTagByName(tag.Name) {
+		response.SetStatus(http.StatusPreconditionFailed).Send(e.ErrorExistTag, "", nil)
+		return
+	}
+
+	models.EditTag(id, tag)
+	response.Send(e.Success, "", nil)
 }
 
 // 删除文章标签
 func DeleteTag(c *gin.Context) {
 	id := com.StrTo(c.Param("id")).MustInt()
+	response := app.Response{C:c}
 
 	valid := validation.Validation{}
 	valid.Min(id, 1, "id").Message("标签 ID 不存在")
 
-	code := e.Success
-	msg := ""
-
-	if ! valid.HasErrors() {
-		if models.ExistTagById(id) {
-			models.DeleteTag(id)
-		} else {
-			code = e.ErrorNotExistTag
-		}
-		msg = e.GetMsg(code)
-	} else {
-		code = e.InvalidParams
-		msg = valid.Errors[0].Message
+	if valid.HasErrors() {
+		app.MarkErrors(valid.Errors)
+		response.SetStatus(http.StatusUnprocessableEntity).Send(e.InvalidParams, valid.Errors[0].Message, nil)
+		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"code": code,
-		"msg": msg,
-		"data": make(map[string]string),
-	})
+	if ! models.ExistTagById(id) {
+		response.SetStatus(http.StatusNotFound).Send(e.ErrorNotExistTag, "", nil)
+	} else {
+		models.DeleteTag(id)
+		response.Send(e.Success, "", nil)
+	}
 }
 
 // 校验创建文章标签的数据
-func validateCreateTagData(name string, state int, createdBy string) (bool, string) {
+func validateCreateTagData(name string, state int, createdBy string) string {
 	valid := validation.Validation{}
 	valid.Required(name, "name").Message("标签名称不能为空")
 	valid.MaxSize(name, 100, "name").Message("标签名称最长为 100 个字符")
@@ -142,34 +114,30 @@ func validateCreateTagData(name string, state int, createdBy string) (bool, stri
 	valid.Range(state, 0, 1, "state").Message("状态只允许为 0、1")
 
 	if valid.HasErrors() {
-		for _, err := range valid.Errors {
-			logging.Info(err.Key, err.Message)
-		}
-		return false, valid.Errors[0].Message
+		app.MarkErrors(valid.Errors)
+		return valid.Errors[0].Message
 	}
 
-	return true, ""
+	return ""
 }
 
 // 校验更新文章标签的数据
-func validateUpdateTagData(id int, state int, name string, modifiedBy string) (bool, string) {
+func validateUpdateTagData(id int, tag *models.Tag) string {
 	valid := validation.Validation{}
 	valid.Required(id, "id").Message("标签 ID 不能为空")
 	valid.Min(id, 1, "id").Message("标签 ID 不存在")
-	valid.MaxSize(name, 100, "name").Message("标签名称最长为 100 个字符")
-	valid.Required(modifiedBy, "modified_by").Message("修改人不能为空")
-	valid.MaxSize(modifiedBy, 100, "modified_by").Message("修改人最长为 100 个字符")
+	valid.MaxSize(tag.Name, 100, "name").Message("标签名称最长为 100 个字符")
+	valid.Required(tag.ModifiedBy, "modified_by").Message("修改人不能为空")
+	valid.MaxSize(tag.ModifiedBy, 100, "modified_by").Message("修改人最长为 100 个字符")
 
-	if state >= 0 {
-		valid.Range(state, 0, 1, "state").Message("标签状态只能为 0、1")
+	if tag.State >= 0 {
+		valid.Range(tag.State, 0, 1, "state").Message("标签状态只能为 0、1")
 	}
 
 	if valid.HasErrors() {
-		for _, err := range valid.Errors {
-			logging.Info(err.Key, err.Message)
-		}
-		return false, valid.Errors[0].Message
+		app.MarkErrors(valid.Errors)
+		return valid.Errors[0].Message
 	}
 
-	return true, ""
+	return ""
 }

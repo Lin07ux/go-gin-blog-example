@@ -41,19 +41,37 @@ func ExistTagById(id int) bool {
 	return tag.ID > 0
 }
 
+// 查询标签
+func GetTagById(id int) (tag Tag) {
+	db.First(&tag, id)
+
+	return
+}
+
 // 新增标签
-func AddTag(name string, state int, createdBy string) bool {
-	db.Create(&Tag {
+func AddTag(name string, state int, createdBy string) int {
+	tag := Tag{
 		Name: name,
 		State: state,
 		CreatedBy: createdBy,
-	})
+	}
 
-	return true
+	db.Create(&tag)
+
+	return tag.ID
 }
 
 // 编辑标签
-func EditTag(id int, data interface{}) bool {
+func EditTag(id int, tag *Tag) bool {
+	data := make(map[string]interface{})
+	data["modified_by"] = tag.ModifiedBy
+	if tag.Name != "" {
+		data["name"] = tag.Name
+	}
+	if tag.State >= 0 {
+		data["state"] = tag.State
+	}
+
 	db.Model(&Tag{}).Where("id = ?", id).Updates(data)
 
 	return true

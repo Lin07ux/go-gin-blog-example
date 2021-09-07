@@ -4,8 +4,8 @@ import (
 	"github.com/astaxie/beego/validation"
 	"github.com/gin-gonic/gin"
 	"github.com/lin07ux/go-gin-example/models"
+	"github.com/lin07ux/go-gin-example/pkg/app"
 	"github.com/lin07ux/go-gin-example/pkg/e"
-	"github.com/lin07ux/go-gin-example/pkg/logging"
 	"github.com/lin07ux/go-gin-example/pkg/setting"
 	"github.com/lin07ux/go-gin-example/pkg/util"
 	"github.com/unknwon/com"
@@ -14,9 +14,9 @@ import (
 
 // 获取文章列表
 func GetArticles(c *gin.Context) {
-	data := make(map[string]interface{})
 	maps := make(map[string]interface{})
 	valid := validation.Validation{}
+	response := app.Response{C:c}
 
 	if arg := c.Query("state"); arg != "" {
 		state := com.StrTo(arg).MustInt()
@@ -30,54 +30,38 @@ func GetArticles(c *gin.Context) {
 		valid.Min(tagId, 1, "tag_id").Message("标签 ID 必须大于 0")
 	}
 
-	code := e.InvalidParams
-	msg := ""
-
-	if ! valid.HasErrors() {
-		code = e.Success
-		msg = e.GetMsg(code)
-
-		data["lists"] = models.GetArticles(util.GetPage(c), setting.AppSetting.PageSize, maps)
-		data["total"] = models.GetArticleTotal(maps)
-	} else {
-		msg = valid.Errors[0].Message
+	if valid.HasErrors() {
+		app.MarkErrors(valid.Errors)
+		response.SetStatus(http.StatusUnprocessableEntity).Send(e.InvalidParams, valid.Errors[0].Message, nil)
+		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"code": code,
-		"msg" : msg,
-		"data": data,
+	response.Send(e.Success, "", map[string]interface{}{
+		"lists": models.GetArticles(util.GetPage(c), setting.AppSetting.PageSize, maps),
+		"total": models.GetArticleTotal(maps),
 	})
 }
 
 // 获取单个文章
 func GetArticle(c *gin.Context) {
+	response := app.Response{C: c}
 	id := com.StrTo(c.Param("id")).MustInt()
 
 	valid := validation.Validation{}
 	valid.Min(id, 1, "id").Message("文章 ID 不存在")
 
-	var data interface{}
-	code := e.InvalidParams
-	msg := ""
-
-	if ! valid.HasErrors() {
-		if models.ExistArticleById(id) {
-			data = models.GetArticle(id)
-			code = e.Success
-		} else {
-			code = e.ErrorNotExistArticle
-		}
-		msg = e.GetMsg(code)
-	} else {
-		msg = valid.Errors[0].Message
+	if valid.HasErrors() {
+		app.MarkErrors(valid.Errors)
+		response.SetStatus(http.StatusUnprocessableEntity).Send(e.InvalidParams, valid.Errors[0].Message, nil)
+		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"code": code,
-		"msg" : msg,
-		"data": data,
-	})
+	if ! models.ExistArticleById(id) {
+		response.SetStatus(http.StatusNotFound).Send(e.ErrorNotExistArticle, "", nil)
+		return
+	}
+
+	response.Send(e.Success, "", models.GetArticle(id))
 }
 
 // @Summary 添加文章
@@ -90,6 +74,7 @@ func GetArticle(c *gin.Context) {
 // @Success 200 {object} gin.H "{"code":200,"data":{},"msg":"ok"}"
 // @Router /api/v1/articles [post]
 func AddArticle(c *gin.Context) {
+	response := app.Response{C: c}
 	article := models.Article{
 		TagID:      com.StrTo(c.PostForm("tag_id")).MustInt(),
 		State:      com.StrTo(c.DefaultPostForm("state", "0")).MustInt(),
@@ -100,25 +85,21 @@ func AddArticle(c *gin.Context) {
 		CreatedBy:  c.PostForm("created_by"),
 	}
 
-	code := e.InvalidParams
-	result, msg := validateCreateArticleData(&article)
-
-	if result {
-		if models.ExistTagById(article.TagID) {
-			models.AddArticle(&article)
-			code = e.Success
-		} else {
-			code = e.ErrorNotExistTag
-		}
-
-		msg = e.GetMsg(code)
+	if message := validateCreateArticleData(&article); message != "" {
+		response.SetStatus(http.StatusUnprocessableEntity).Send(e.InvalidParams, message, nil)
+		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"code": code,
-		"msg" : msg,
-		"data": make(map[string]interface{}),
-	})
+	if ! models.ExistTagById(article.TagID) {
+		response.SetStatus(http.StatusNotFound).Send(e.ErrorNotExistTag, "", nil)
+		return
+	}
+
+	if id := models.AddArticle(&article); id > 0 {
+		response.Send(e.Success, "", map[string]int{"id": id})
+	} else {
+		response.SetStatus(http.StatusExpectationFailed).Send(e.Error, "", nil)
+	}
 }
 
 // @Summary 编辑文章
@@ -132,6 +113,7 @@ func AddArticle(c *gin.Context) {
 // @Router /api/v1/articles/{id} [put]
 func EditArticle(c *gin.Context) {
 	id := com.StrTo(c.Param("id")).MustInt()
+	response := app.Response{C: c}
 	article := models.Article{
 		TagID:      com.StrTo(c.PostForm("tag_id")).MustInt(),
 		Title:      c.PostForm("title"),
@@ -142,25 +124,26 @@ func EditArticle(c *gin.Context) {
 		State:      com.StrTo(c.DefaultPostForm("state", "-1")).MustInt(),
 	}
 
-	code := e.InvalidParams
-	result, msg := validateUpdateArticleData(id, &article)
-
-	if result {
-		if models.ExistArticleById(id) {
-			models.EditArticle(id, &article)
-			code = e.Success
-		} else {
-			code = e.ErrorNotExistArticle
-		}
-
-		msg = e.GetMsg(code)
+	if message := validateUpdateArticleData(id, &article); message != "" {
+		response.SetStatus(http.StatusUnprocessableEntity).Send(e.InvalidParams, message, nil)
+		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"code": code,
-		"msg" : msg,
-		"data": make(map[string]string),
-	})
+	if ! models.ExistArticleById(id) {
+		response.SetStatus(http.StatusNotFound).Send(e.ErrorNotExistArticle, "", nil)
+		return
+	}
+
+	if ! models.ExistTagById(article.TagID) {
+		response.SetStatus(http.StatusNotFound).Send(e.ErrorNotExistTag, "", nil)
+		return
+	}
+
+	if models.EditArticle(id, &article) {
+		response.Send(e.Success, "", nil)
+	} else {
+		response.SetStatus(http.StatusExpectationFailed).Send(e.Error, "", nil)
+	}
 }
 
 // 删除文章
@@ -191,7 +174,7 @@ func DeleteArticle(c *gin.Context) {
 }
 
 // 创建文章数据校验
-func validateCreateArticleData(article *models.Article) (bool, string) {
+func validateCreateArticleData(article *models.Article) string {
 	valid := validation.Validation{}
 	valid.Min(article.TagID, 1, "tag_id").Message("标签 ID 必须大于 0")
 	valid.Required(article.Title, "title").Message("文章标题不能为空")
@@ -207,17 +190,15 @@ func validateCreateArticleData(article *models.Article) (bool, string) {
 	valid.Range(article.State, 0, 1, "state").Message("文章状态只能为 0、1")
 
 	if valid.HasErrors() {
-		for _, err := range valid.Errors {
-			logging.Info(err.Key, err.Message)
-		}
-		return false, valid.Errors[0].Message
+		app.MarkErrors(valid.Errors)
+		return valid.Errors[0].Message
 	}
 
-	return true, ""
+	return ""
 }
 
 // 更新文章数据校验
-func validateUpdateArticleData(id int, article *models.Article) (bool, string) {
+func validateUpdateArticleData(id int, article *models.Article) string {
 	valid := validation.Validation{}
 	valid.Min(id, 1, "id").Message("文章 ID 必须大于 0")
 	valid.MaxSize(article.Title, 100, "title").Message("标题最长为 100 个字符")
@@ -232,11 +213,9 @@ func validateUpdateArticleData(id int, article *models.Article) (bool, string) {
 	}
 
 	if valid.HasErrors() {
-		for _, err := range valid.Errors {
-			logging.Info(err.Key, err.Message)
-		}
-		return false, valid.Errors[0].Message
+		app.MarkErrors(valid.Errors)
+		return valid.Errors[0].Message
 	}
 
-	return true, ""
+	return ""
 }

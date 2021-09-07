@@ -2,7 +2,7 @@ package e
 
 const (
 	Success       = 200
-	InvalidParams = 400
+	InvalidParams = 422
 	Error         = 500
 
 	ErrorExistTag        = 10001

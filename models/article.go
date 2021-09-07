@@ -47,10 +47,10 @@ func GetArticle(id int) (article Article) {
 }
 
 // 添加文章
-func AddArticle(article *Article) bool {
+func AddArticle(article *Article) int {
 	db.Create(article)
 
-	return true
+	return article.ID
 }
 
 // 编辑文章
