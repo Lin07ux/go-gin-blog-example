@@ -94,6 +94,7 @@ func AddArticle(c *gin.Context) {
 		TagID:      com.StrTo(c.PostForm("tag_id")).MustInt(),
 		State:      com.StrTo(c.DefaultPostForm("state", "0")).MustInt(),
 		Title:      c.PostForm("title"),
+		Cover:      c.PostForm("cover"),
 		Desc:       c.PostForm("desc"),
 		Content:    c.PostForm("content"),
 		CreatedBy:  c.PostForm("created_by"),
@@ -134,6 +135,7 @@ func EditArticle(c *gin.Context) {
 	article := models.Article{
 		TagID:      com.StrTo(c.PostForm("tag_id")).MustInt(),
 		Title:      c.PostForm("title"),
+		Cover:      c.PostForm("cover"),
 		Desc:       c.PostForm("desc"),
 		Content:    c.PostForm("content"),
 		ModifiedBy: c.PostForm("modified_by"),
@@ -194,6 +196,8 @@ func validateCreateArticleData(article *models.Article) (bool, string) {
 	valid.Min(article.TagID, 1, "tag_id").Message("标签 ID 必须大于 0")
 	valid.Required(article.Title, "title").Message("文章标题不能为空")
 	valid.MaxSize(article.Title, 100, "title").Message("文章标题不能超过 100 个字符")
+	valid.Required(article.Cover, "cover").Message("文章封面图片地址不能为空")
+	valid.MaxSize(article.Cover, 255, "cover").Message("文章封面图片地址不能超过 255 个字符")
 	valid.Required(article.Desc, "desc").Message("文章简述不能为空")
 	valid.MaxSize(article.Desc, 255, "desc").Message("文章简述不能超过 255 个字符")
 	valid.Required(article.Content, "content").Message("文章内容不能为空")
@@ -217,6 +221,7 @@ func validateUpdateArticleData(id int, article *models.Article) (bool, string) {
 	valid := validation.Validation{}
 	valid.Min(id, 1, "id").Message("文章 ID 必须大于 0")
 	valid.MaxSize(article.Title, 100, "title").Message("标题最长为 100 个字符")
+	valid.MaxSize(article.Cover, 255, "cover").Message("封面图片地址最长为 255 个字符")
 	valid.MaxSize(article.Desc, 255, "desc").Message("简述最长为 255 个字符")
 	valid.MaxSize(article.Content, 65535, "content").Message("内容最长为 65535 个字符")
 	valid.Required(article.ModifiedBy, "modified_by").Message("修改人不能为空")

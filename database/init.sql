@@ -18,6 +18,7 @@ CREATE TABLE `articles` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `tag_id` int unsigned DEFAULT '0' COMMENT '标签ID',
   `title` varchar(100) DEFAULT '' COMMENT '文章标题',
+  `cover` varchar(255) DEFAULT '' COMMENT '封面图片 url',
   `desc` varchar(255) DEFAULT '' COMMENT '简述',
   `content` text,
   `created_at` int DEFAULT NULL,

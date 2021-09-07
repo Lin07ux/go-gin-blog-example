@@ -7,6 +7,7 @@ type Article struct {
 	Tag   Tag `json:"tag"`
 
 	Title string `json:"title"`
+	Cover string `json:"cover"`
 	Desc string `json:"desc"`
 	Content string `json:"content"`
 	CreatedBy string `json:"created_by"`
@@ -62,6 +63,9 @@ func EditArticle(id int, article *Article) bool {
 	}
 	if article.Title != "" {
 		data["title"] = article.Title
+	}
+	if article.Cover != "" {
+		data["cover"] = article.Cover
 	}
 	if article.Desc != "" {
 		data["desc"] = article.Desc
