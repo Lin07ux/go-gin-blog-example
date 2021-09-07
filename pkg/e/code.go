@@ -14,4 +14,8 @@ const (
 	ErrorAuthTokenGenerate     = 2003
 	ErrorAuthToken             = 2004
 	ErrorAuth                  = 2005
+
+	ErrorUploadCheckImageBasic  = 30001
+	ErrorUploadCheckImageFormat = 30002
+	ErrorUploadSaveImageFail    = 3003
 )

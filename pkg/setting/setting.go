@@ -15,6 +15,11 @@ type app struct {
 	LogSaveName string
 	LogFileExt string
 	TimeFormat string
+
+	ImagePrefixUrl string
+	ImageSavePath string
+	ImageMaxSize int
+	ImageAllowExts []string
 }
 
 type server struct {
@@ -57,11 +62,12 @@ func Setup() {
 		log.Fatalf("config.MapTo ServerSetting err: %v", err)
 	}
 
-	ServerSetting.ReadTimeout = ServerSetting.ReadTimeout * time.Second
-	ServerSetting.WriteTimeout = ServerSetting.WriteTimeout * time.Second
-
 	err = config.Section("database").MapTo(DatabaseSetting)
 	if err != nil {
 		log.Fatalf("config.MapTo DatabaseSetting err: %v", err)
 	}
+
+	AppSetting.ImageMaxSize = AppSetting.ImageMaxSize * 1024 * 1024
+	ServerSetting.ReadTimeout = ServerSetting.ReadTimeout * time.Second
+	ServerSetting.WriteTimeout = ServerSetting.WriteTimeout * time.Second
 }
