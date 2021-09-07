@@ -16,10 +16,10 @@ func main() {
 	logging.Setup()
 	models.Setup()
 
-	endless.DefaultReadTimeOut = setting.ReadTimeout
-	endless.DefaultWriteTimeOut = setting.WriteTimeout
+	endless.DefaultReadTimeOut = setting.ServerSetting.ReadTimeout
+	endless.DefaultWriteTimeOut = setting.ServerSetting.WriteTimeout
 	endless.DefaultMaxHeaderBytes = 1 << 20
-	endpoint := fmt.Sprintf(":%d", setting.HttpPort)
+	endpoint := fmt.Sprintf(":%d", setting.ServerSetting.HttpPort)
 
 	server := endless.NewServer(endpoint, routers.InitRouter())
 	server.BeforeBegin = func(add string) {

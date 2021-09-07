@@ -29,6 +29,7 @@ const (
 	FATAL
 )
 
+// Setup initialize logger
 func Setup() {
 	F = openLogFile(getLogFileFullPath())
 

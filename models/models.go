@@ -22,39 +22,17 @@ type Model struct {
 
 var db *gorm.DB
 
+// Setup initialize db handler
 func Setup() {
-	sec, err := setting.Cfg.GetSection("database")
-	if err != nil {
-		log.Fatal(2, "Fail to get section 'database': %v", err)
-	}
+	var err error
+	var sqlDB *sql.DB
 
-	dsn := fmt.Sprintf(
-		"%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
-		sec.Key("USER").String(),
-		sec.Key("PASSWORD").String(),
-		sec.Key("HOST").String(),
-		sec.Key("PORT").String(),
-		sec.Key("NAME").String(),
-	)
-	db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
-		Logger: logger.New(
-		  log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer（日志输出的目标、前缀和日志包含的内容）
-		  logger.Config{
-			SlowThreshold:            0 * time.Second, // 慢 SQL 阈值
-			LogLevel:                  logger.Info,    // 日志级别
-			IgnoreRecordNotFoundError: true,           // 忽略 ErrRecordNotFound（记录未找到）错误
-			Colorful:                  true,           // 启用彩色打印
-		  },
-		),
-	})
-
+	db, err = gorm.Open(getDBDialector(), &gorm.Config{ Logger: getLogger() })
 	if err != nil {
 		log.Fatalf("Failed to connect db: %v", err)
 	}
 
-	var sqlDB *sql.DB
 	sqlDB, err = db.DB()
-
 	if err != nil {
 		log.Fatalf("Failed to connect db: %v", err)
 	}
@@ -63,6 +41,31 @@ func Setup() {
 	sqlDB.SetMaxOpenConns(100)
 
 	_ = db.Callback().Update().Before("gorm:update").Register("timestamp:before_update", updateTimeStampForUpdateCallback)
+}
+
+// getDBDialector build a new mysql dialector
+func getDBDialector() gorm.Dialector {
+	return mysql.Open(fmt.Sprintf(
+		"%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local",
+		setting.DatabaseSetting.User,
+		setting.DatabaseSetting.Password,
+		setting.DatabaseSetting.Host,
+		setting.DatabaseSetting.Port,
+		setting.DatabaseSetting.Name,
+	))
+}
+
+// getLogger build a new logger instance
+func getLogger() logger.Interface {
+	return logger.New(
+	  	log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer（日志输出的目标、前缀和日志包含的内容）
+	  	logger.Config{
+			SlowThreshold:            0 * time.Second, // 慢 SQL 阈值
+			LogLevel:                  logger.Info,    // 日志级别
+			IgnoreRecordNotFoundError: true,           // 忽略 ErrRecordNotFound（记录未找到）错误
+			Colorful:                  true,           // 启用彩色打印
+	  	},
+	)
 }
 
 // updateTimeStampForUpdateCallback will set `ModifiedAt` when updating

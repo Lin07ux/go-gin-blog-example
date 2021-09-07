@@ -37,7 +37,7 @@ func GetArticles(c *gin.Context) {
 		code = e.Success
 		msg = e.GetMsg(code)
 
-		data["lists"] = models.GetArticles(util.GetPage(c), setting.PageSize, maps)
+		data["lists"] = models.GetArticles(util.GetPage(c), setting.AppSetting.PageSize, maps)
 		data["total"] = models.GetArticleTotal(maps)
 	} else {
 		msg = valid.Errors[0].Message

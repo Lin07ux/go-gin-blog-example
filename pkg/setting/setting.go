@@ -6,53 +6,62 @@ import (
 	"time"
 )
 
-var (
-	Cfg *ini.File
+type app struct {
+	JwtSecret string
+	PageSize int
+	RuntimeRootPath string
 
+	LogSavePath string
+	LogSaveName string
+	LogFileExt string
+	TimeFormat string
+}
+
+type server struct {
 	RunMode string
-
 	HttpPort int
 	ReadTimeout time.Duration
 	WriteTimeout time.Duration
+}
 
-	PageSize int
-	JwtSecret string
-)
+type database struct {
+	Type string
+	Host string
+	Port int
+	Name string
+	User string
+	Password string
+}
 
+// 应用配置
+var AppSetting = &app{}
+// HTTP 服务器配置
+var ServerSetting = &server{}
+// 数据库配置
+var DatabaseSetting = &database{}
+
+// Setup initialize settings from config file
 func Setup() {
-	var err error
-
-	Cfg, err = ini.Load("conf/app.ini")
+	config, err := ini.Load("conf/app.ini")
 	if err != nil {
 		log.Fatalf("Fail to parse 'conf/app.ini': %v", err)
 	}
 
-	LoadBase()
-	LoadServer()
-	LoadApp()
-}
-
-func LoadBase() {
-	RunMode = Cfg.Section("").Key("RUN_MODE").MustString("debug")
-}
-
-func LoadServer() {
-	sec, err := Cfg.GetSection("server")
+	err = config.Section("app").MapTo(AppSetting)
 	if err != nil {
-		log.Fatalf("Fail to get section 'server': %v", err)
+		log.Fatalf("config.MapTo AppSetting err: %v", err)
 	}
 
-	HttpPort = sec.Key("HTTP_PORT").MustInt(8000)
-	ReadTimeout = time.Duration(sec.Key("READ_TIMEOUT").MustInt(60)) * time.Second
-	WriteTimeout = time.Duration(sec.Key("WRITE_TIMEOUT").MustInt(60)) * time.Second
-}
-
-func LoadApp() {
-	sec, err := Cfg.GetSection("app")
+	err = config.Section("server").MapTo(ServerSetting)
 	if err != nil {
-		log.Fatalf("Fail to get section 'app': %v", err)
+		log.Fatalf("config.MapTo ServerSetting err: %v", err)
 	}
 
-	JwtSecret = sec.Key("JWT_SECRET").MustString("!@)*#)!@U#@*!@!)")
-	PageSize = sec.Key("PAGE_SIZE").MustInt(10)
+	ServerSetting.ReadTimeout = ServerSetting.ReadTimeout * time.Second
+	ServerSetting.WriteTimeout = ServerSetting.WriteTimeout * time.Second
+
+	err = config.Section("database").MapTo(DatabaseSetting)
+	if err != nil {
+		log.Fatalf("config.MapTo DatabaseSetting err: %v", err)
+	}
 }
