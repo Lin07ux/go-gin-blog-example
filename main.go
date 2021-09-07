@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"github.com/fvbock/endless"
+	"github.com/lin07ux/go-gin-example/models"
+	"github.com/lin07ux/go-gin-example/pkg/logging"
 	"github.com/lin07ux/go-gin-example/pkg/setting"
 	"github.com/lin07ux/go-gin-example/routers"
 	"log"
@@ -10,6 +12,10 @@ import (
 )
 
 func main() {
+	setting.Setup()
+	logging.Setup()
+	models.Setup()
+
 	endless.DefaultReadTimeOut = setting.ReadTimeout
 	endless.DefaultWriteTimeOut = setting.WriteTimeout
 	endless.DefaultMaxHeaderBytes = 1 << 20

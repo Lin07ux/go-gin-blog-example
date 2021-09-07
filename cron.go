@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/lin07ux/go-gin-example/models"
+	"github.com/lin07ux/go-gin-example/pkg/setting"
 	"github.com/robfig/cron"
 	"log"
 	"time"
@@ -9,6 +10,9 @@ import (
 
 func main() {
 	log.Println("Starting...")
+
+	setting.Setup()
+	models.Setup()
 
 	c := cron.New()
 	_ = c.AddFunc("* * * * * *", func() {

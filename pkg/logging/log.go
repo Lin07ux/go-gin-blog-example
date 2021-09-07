@@ -29,7 +29,7 @@ const (
 	FATAL
 )
 
-func init() {
+func Setup() {
 	F = openLogFile(getLogFileFullPath())
 
 	logger = log.New(F, DefaultPrefix, log.LstdFlags)

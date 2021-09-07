@@ -19,7 +19,7 @@ var (
 	JwtSecret string
 )
 
-func init() {
+func Setup() {
 	var err error
 
 	Cfg, err = ini.Load("conf/app.ini")

@@ -22,7 +22,7 @@ type Model struct {
 
 var db *gorm.DB
 
-func init() {
+func Setup() {
 	sec, err := setting.Cfg.GetSection("database")
 	if err != nil {
 		log.Fatal(2, "Fail to get section 'database': %v", err)
