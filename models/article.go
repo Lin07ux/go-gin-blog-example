@@ -14,11 +14,6 @@ type Article struct {
 	State int `json:"state"`
 }
 
-// 数据表名
-func (Article) TableName() string {
-	return "articles"
-}
-
 // 使用 ID 判断文章是否存在
 func ExistArticleById(id int) bool {
 	var article Article
@@ -29,7 +24,7 @@ func ExistArticleById(id int) bool {
 }
 
 // 获取文章的数量
-func GetArticleTotal(maps interface{}) (count int) {
+func GetArticleTotal(maps interface{}) (count int64) {
 	db.Model(&Article{}).Where(maps).Count(&count)
 
 	return
@@ -45,7 +40,7 @@ func GetArticles(pageNum, pageSize int, maps interface{}) (articles []Article) {
 // 获取文章内容
 func GetArticle(id int) (article Article) {
 	db.Where("id = ?", id).First(&article)
-	db.Model(&article).Related(&article.Tag)
+	_ = db.Model(&article).Association("Tag").Find(&article.Tag)
 
 	return
 }
@@ -78,14 +73,14 @@ func EditArticle(id int, article *Article) bool {
 		data["state"] = article.State
 	}
 
-	db.Model(&Article{}).Where("id = ?", id).Update(data)
+	db.Model(&Article{}).Where("id = ?", id).Updates(data)
 
 	return true
 }
 
 // 删除文章
 func DeleteArticle(id int) bool {
-	db.Where("id = ?", id).Delete(Article{})
+	db.Delete(&Article{}, id)
 
 	return true
 }

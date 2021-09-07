@@ -9,11 +9,6 @@ type Tag struct {
 	ModifiedBy string `json:"modified_by"`
 }
 
-// 修改表名
-func (Tag) TableName() string {
-	return "tags"
-}
-
 // 查询文章标签列表
 func GetTags(pageNum int, pageSize int, maps interface{}) (tags []Tag) {
 	db.Where(maps).Offset(pageNum).Limit(pageSize).Find(&tags)
@@ -22,7 +17,7 @@ func GetTags(pageNum int, pageSize int, maps interface{}) (tags []Tag) {
 }
 
 // 查询标签总量
-func GetTagTotal(maps interface{}) (count int) {
+func GetTagTotal(maps interface{}) (count int64) {
 	db.Model(&Tag{}).Where(maps).Count(&count)
 
 	return
@@ -59,14 +54,14 @@ func AddTag(name string, state int, createdBy string) bool {
 
 // 编辑标签
 func EditTag(id int, data interface{}) bool {
-	db.Model(&Tag{}).Where("id = ?", id).Update(data)
+	db.Model(&Tag{}).Where("id = ?", id).Updates(data)
 
 	return true
 }
 
 // 删除标签
 func DeleteTag(id int) bool {
-	db.Where("id = ?", id).Delete(&Tag{})
+	db.Delete(&Tag{}, id)
 
 	return true
 }
