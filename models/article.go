@@ -1,5 +1,7 @@
 package models
 
+import "gorm.io/gorm"
+
 type Article struct {
 	Model
 
@@ -39,11 +41,22 @@ func GetArticles(pageNum, pageSize int, maps interface{}) (articles []Article) {
 }
 
 // 获取文章内容
-func GetArticle(id int) (article Article) {
-	db.Where("id = ?", id).First(&article)
-	_ = db.Model(&article).Association("Tag").Find(&article.Tag)
+func GetArticle(id int) (*Article, error) {
+	article := &Article{}
 
-	return
+	err := db.Where("id = ?", id).First(article).Error
+	if err == nil {
+		err = db.Model(&article).Association("Tag").Find(&article.Tag)
+		if err == nil {
+			return article, nil
+		}
+	}
+
+	if err == gorm.ErrRecordNotFound {
+		return nil, nil
+	}
+
+	return nil, err
 }
 
 // 添加文章

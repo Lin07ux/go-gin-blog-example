@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/fvbock/endless"
 	"github.com/lin07ux/go-gin-example/models"
+	"github.com/lin07ux/go-gin-example/pkg/gredis"
 	"github.com/lin07ux/go-gin-example/pkg/logging"
 	"github.com/lin07ux/go-gin-example/pkg/setting"
 	"github.com/lin07ux/go-gin-example/routers"
@@ -15,6 +16,7 @@ func main() {
 	setting.Setup()
 	logging.Setup()
 	models.Setup()
+	gredis.Setup()
 
 	endless.DefaultReadTimeOut = setting.ServerSetting.ReadTimeout
 	endless.DefaultWriteTimeOut = setting.ServerSetting.WriteTimeout

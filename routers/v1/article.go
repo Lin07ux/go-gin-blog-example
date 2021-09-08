@@ -8,6 +8,7 @@ import (
 	"github.com/lin07ux/go-gin-example/pkg/e"
 	"github.com/lin07ux/go-gin-example/pkg/setting"
 	"github.com/lin07ux/go-gin-example/pkg/util"
+	"github.com/lin07ux/go-gin-example/services"
 	"github.com/unknwon/com"
 	"net/http"
 )
@@ -45,10 +46,10 @@ func GetArticles(c *gin.Context) {
 // 获取单个文章
 func GetArticle(c *gin.Context) {
 	response := app.Response{C: c}
-	id := com.StrTo(c.Param("id")).MustInt()
+	articleService := services.Article{ID: com.StrTo(c.Param("id")).MustInt()}
 
 	valid := validation.Validation{}
-	valid.Min(id, 1, "id").Message("文章 ID 不存在")
+	valid.Min(articleService.ID, 1, "id").Message("文章 ID 不存在")
 
 	if valid.HasErrors() {
 		app.MarkErrors(valid.Errors)
@@ -56,12 +57,14 @@ func GetArticle(c *gin.Context) {
 		return
 	}
 
-	if ! models.ExistArticleById(id) {
+	article, err := articleService.Get()
+	if err != nil {
+		response.SetStatus(http.StatusInternalServerError).Send(e.ErrorGetArticleFail, "", nil)
+	} else if article == nil {
 		response.SetStatus(http.StatusNotFound).Send(e.ErrorNotExistArticle, "", nil)
-		return
+	} else {
+		response.Send(e.Success, "", article)
 	}
-
-	response.Send(e.Success, "", models.GetArticle(id))
 }
 
 // @Summary 添加文章

@@ -8,6 +8,7 @@ const (
 	ErrorExistTag        = 10001
 	ErrorNotExistTag     = 10002
 	ErrorNotExistArticle = 10003
+	ErrorGetArticleFail  = 1004
 
 	ErrorAuthCheckTokenFail    = 20001
 	ErrorAuthCheckTokenTimeout = 20002

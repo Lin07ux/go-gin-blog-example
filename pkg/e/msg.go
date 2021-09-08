@@ -7,6 +7,7 @@ var MsgFlags = map[int]string {
 	ErrorExistTag:               "已存在该标签名称",
 	ErrorNotExistTag:            "该标签不存在",
 	ErrorNotExistArticle:        "该文章不存在",
+	ErrorGetArticleFail:         "获取文章失败",
 	ErrorAuthCheckTokenFail:     "Token 鉴权失败",
 	ErrorAuthCheckTokenTimeout:  "Token 已超时",
 	ErrorAuthTokenGenerate:      "Token 生成失败",
