@@ -5,6 +5,7 @@ go 1.16
 require (
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751
 	github.com/astaxie/beego v1.12.3
+	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/fvbock/endless v0.0.0-20170109170031-447134032cb6
 	github.com/gin-gonic/gin v1.7.4
@@ -12,7 +13,7 @@ require (
 	github.com/go-openapi/jsonreference v0.19.6 // indirect
 	github.com/go-openapi/swag v0.19.15 // indirect
 	github.com/go-playground/validator/v10 v10.9.0 // indirect
-	github.com/golang/protobuf v1.5.2 // indirect
+	github.com/go-redis/redis/v8 v8.11.3
 	github.com/json-iterator/go v1.1.11 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-isatty v0.0.13 // indirect

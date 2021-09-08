@@ -38,12 +38,24 @@ type database struct {
 	Password string
 }
 
+type redis struct {
+	Host string
+	Password string
+	Index int
+	PoolSize int
+	MaxIdle int
+	MaxActive int
+	IdleTimeout time.Duration
+}
+
 // 应用配置
 var AppSetting = &app{}
 // HTTP 服务器配置
 var ServerSetting = &server{}
 // 数据库配置
 var DatabaseSetting = &database{}
+// Redis 配置
+var RedisSetting = &redis{}
 
 // Setup initialize settings from config file
 func Setup() {
@@ -67,7 +79,13 @@ func Setup() {
 		log.Fatalf("config.MapTo DatabaseSetting err: %v", err)
 	}
 
+	err = config.Section("redis").MapTo(RedisSetting)
+	if err != nil {
+		log.Fatalf("config.MapTo RedisSetting err: %v", err)
+	}
+
 	AppSetting.ImageMaxSize = AppSetting.ImageMaxSize * 1024 * 1024
 	ServerSetting.ReadTimeout = ServerSetting.ReadTimeout * time.Second
 	ServerSetting.WriteTimeout = ServerSetting.WriteTimeout * time.Second
+	RedisSetting.IdleTimeout = RedisSetting.IdleTimeout * time.Second
 }

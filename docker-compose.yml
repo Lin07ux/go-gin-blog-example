@@ -4,22 +4,37 @@ services:
     image: mysql:latest
     container_name: mysql
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --default-authentication-plugin=mysql_native_password
+    restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: secret
+    ports:
+      - "3306:3306"
     volumes:
       - ./database/data:/var/lib/mysql
       - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - gonet
 
+  redis:
+    image: redis:latest
+    container_name: redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - gonet
+
   go:
     build: .
+    container_name: go
+    restart: unless-stopped
     ports:
       - "8000:8000"
     networks:
       - gonet
     depends_on:
       - mysql
+      - redis
 
 networks:
   gonet:
