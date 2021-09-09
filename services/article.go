@@ -45,7 +45,7 @@ func (a *Article) List() ([]*models.Article, error) {
 		return articles, nil
 	}
 
-	articles, err := models.GetArticles(a.PageNum, a.PageSize, a.getQueryMaps())
+	articles, err := models.GetArticles(a.getListOffset(), a.PageSize, a.getQueryMaps())
 	if articles != nil && err == nil {
 		articleCache.SetList(articles)
 	}
@@ -74,4 +74,9 @@ func (a *Article) getQueryMaps() map[string]interface{} {
 	}
 
 	return maps
+}
+
+// 获取文章列表的分页起始位置
+func (a *Article) getListOffset() int {
+	return (a.PageNum - 1) * a.PageSize
 }

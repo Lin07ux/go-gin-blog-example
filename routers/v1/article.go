@@ -7,19 +7,26 @@ import (
 	"github.com/lin07ux/go-gin-example/pkg/app"
 	"github.com/lin07ux/go-gin-example/pkg/e"
 	"github.com/lin07ux/go-gin-example/pkg/setting"
-	"github.com/lin07ux/go-gin-example/pkg/util"
 	"github.com/lin07ux/go-gin-example/services"
 	"github.com/unknwon/com"
 	"net/http"
 )
 
-// 获取文章列表
+// @Summary 获取文章列表
+// @Produce json
+// @param state query int false "文章状态" Enums(0, 1)
+// @Param tag_id query int false "所属标签 ID" minimum(1)
+// @Param page query int false "分页页码" minimum(1) default(1)
+// @Success 200 {object} app.ResponseBody{data={list=[]models.Article,total:int}} "ok"
+// @Failure 422 {object} app.ResponseBody "请求参数错误"
+// @Failure 500 {object} app.ResponseBody "获取文章数据失败"
+// @Router /api/v1/articles [get]
 func GetArticles(c *gin.Context) {
 	response := app.Response{C: c}
 	articleService := services.Article{
 		TagID:    com.StrTo(c.DefaultQuery("state", "-1")).MustInt(),
 		State:    com.StrTo(c.DefaultQuery("tag_id", "0")).MustInt(),
-		PageNum:  util.GetPage(c),
+		PageNum:  com.StrTo(c.Query("page")).MustInt(),
 		PageSize: setting.AppSetting.PageSize,
 	}
 
@@ -49,7 +56,14 @@ func GetArticles(c *gin.Context) {
 	})
 }
 
-// 获取单个文章
+// @Summary 获取单个文章
+// @Produce json
+// @param id path int true "文章 ID" minimum(1)
+// @Success 200 {object} app.ResponseBody{data=models.Article} "ok"
+// @Failure 404 {object} app.ResponseBody{code=int(404)} "文章不存在"
+// @Failure 422 {object} app.ResponseBody{code=int(422)} "请求参数错误"
+// @Failure 500 {object} app.ResponseBody "获取文章失败"
+// @Router /api/v1/article/{id} [get]
 func GetArticle(c *gin.Context) {
 	response := app.Response{C: c}
 	articleService := services.Article{ID: com.StrTo(c.Param("id")).MustInt()}
@@ -76,7 +90,7 @@ func GetArticle(c *gin.Context) {
 // @Param content body string true "Content"
 // @Param state body int false "State"
 // @Param created_by body string true "CreatedBy"
-// @Success 200 {object} gin.H "{"code":200,"data":{},"msg":"ok"}"
+// @Success 200 {object} app.ResponseBody "ok"
 // @Router /api/v1/articles [post]
 func AddArticle(c *gin.Context) {
 	response := app.Response{C: c}

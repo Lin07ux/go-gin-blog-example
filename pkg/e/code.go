@@ -1,7 +1,7 @@
 package e
 
 const (
-	Success       = 200
+	Success       = 0
 	InvalidParams = 422
 	Error         = 500
 

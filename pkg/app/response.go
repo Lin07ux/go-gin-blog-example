@@ -11,6 +11,12 @@ type Response struct {
 	status int
 }
 
+type ResponseBody struct {
+	Code int `json:"code" example:"0"`
+	Message string `json:"message" example:"ok"`
+	Data interface{} `json:"data"`
+}
+
 func (g *Response) SetStatus(code int) *Response {
 	g.status = code
 
@@ -31,9 +37,9 @@ func (g *Response) Send(code int, message string, data interface{}) {
 		data = make(map[string]string)
 	}
 
-	g.C.JSON(httpCode, gin.H{
-		"code": code,
-		"message": message,
-		"data": data,
+	g.C.JSON(httpCode, ResponseBody{
+		Code:    code,
+		Message: message,
+		Data:    data,
 	})
 }
