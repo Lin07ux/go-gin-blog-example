@@ -27,17 +27,19 @@ func ExistArticleById(id int) bool {
 }
 
 // 获取文章的数量
-func GetArticleTotal(maps interface{}) (count int64) {
-	db.Model(&Article{}).Where(maps).Count(&count)
+func GetArticleTotal(maps interface{}) (count int64, err error) {
+	if err = db.Model(&Article{}).Where(maps).Count(&count).Error; err != nil {
+		return 0, err
+	}
 
-	return
+	return count, nil
 }
 
 // 获取文章列表
-func GetArticles(pageNum, pageSize int, maps interface{}) (articles []Article) {
-	db.Preload("Tag").Where(maps).Offset(pageNum).Limit(pageSize).Find(&articles)
+func GetArticles(offset, limit int, maps interface{}) (articles []*Article, err error) {
+	err = db.Preload("Tag").Where(maps).Offset(offset).Limit(limit).Find(&articles).Error
 
-	return
+	return articles, err
 }
 
 // 获取文章内容

@@ -15,31 +15,37 @@ import (
 
 // 获取文章列表
 func GetArticles(c *gin.Context) {
-	maps := make(map[string]interface{})
-	valid := validation.Validation{}
-	response := app.Response{C:c}
-
-	if arg := c.Query("state"); arg != "" {
-		state := com.StrTo(arg).MustInt()
-		maps["state"] = state
-		valid.Range(state, 0, 1, "state").Message("状态只能为 0、1")
+	response := app.Response{C: c}
+	articleService := services.Article{
+		TagID:    com.StrTo(c.DefaultQuery("state", "-1")).MustInt(),
+		State:    com.StrTo(c.DefaultQuery("tag_id", "0")).MustInt(),
+		PageNum:  util.GetPage(c),
+		PageSize: setting.AppSetting.PageSize,
 	}
 
-	if arg := c.Query("tag_id"); arg != "" {
-		tagId := com.StrTo(arg).MustInt()
-		maps["tag_id"] = tagId
-		valid.Min(tagId, 1, "tag_id").Message("标签 ID 必须大于 0")
-	}
-
-	if valid.HasErrors() {
-		app.MarkErrors(valid.Errors)
-		response.SetStatus(http.StatusUnprocessableEntity).Send(e.InvalidParams, valid.Errors[0].Message, nil)
+	if message := validateArticlesQueries(&articleService); message != "" {
+		response.SetStatus(http.StatusUnprocessableEntity).Send(e.InvalidParams, message, nil)
 		return
 	}
 
+	total, err := articleService.Count()
+	if err != nil {
+		response.SetStatus(http.StatusInternalServerError).Send(e.ErrorCountArticlesFail, "", nil)
+		return
+	}
+
+	var articles = make([]*models.Article, 0, 1)
+	if total > 0 {
+		articles, err = articleService.List()
+		if err != nil {
+			response.SetStatus(http.StatusInternalServerError).Send(e.ErrorGetArticlesFail, "", nil)
+			return
+		}
+	}
+
 	response.Send(e.Success, "", map[string]interface{}{
-		"lists": models.GetArticles(util.GetPage(c), setting.AppSetting.PageSize, maps),
-		"total": models.GetArticleTotal(maps),
+		"lists": articles,
+		"total": total,
 	})
 }
 
@@ -48,16 +54,12 @@ func GetArticle(c *gin.Context) {
 	response := app.Response{C: c}
 	articleService := services.Article{ID: com.StrTo(c.Param("id")).MustInt()}
 
-	valid := validation.Validation{}
-	valid.Min(articleService.ID, 1, "id").Message("文章 ID 不存在")
-
-	if valid.HasErrors() {
-		app.MarkErrors(valid.Errors)
-		response.SetStatus(http.StatusUnprocessableEntity).Send(e.InvalidParams, valid.Errors[0].Message, nil)
+	if message := validateArticleId(&articleService); message != "" {
+		response.SetStatus(http.StatusUnprocessableEntity).Send(e.InvalidParams, message, nil)
 		return
 	}
 
-	article, err := articleService.Get()
+	article, err := articleService.Detail()
 	if err != nil {
 		response.SetStatus(http.StatusInternalServerError).Send(e.ErrorGetArticleFail, "", nil)
 	} else if article == nil {
@@ -174,6 +176,38 @@ func DeleteArticle(c *gin.Context) {
 		"msg" : msg,
 		"data": make(map[string]string),
 	})
+}
+
+// 验证文章 ID
+func validateArticleId(article *services.Article) string {
+	valid := validation.Validation{}
+	valid.Min(article.ID, 1, "id").Message("文章 ID 不存在")
+
+	if valid.HasErrors() {
+		app.MarkErrors(valid.Errors)
+		return valid.Errors[0].Message
+	}
+
+	return ""
+}
+
+// 验证文章列表查询参数
+func validateArticlesQueries(article *services.Article) string {
+	valid := validation.Validation{}
+
+	if article.State >= 0 {
+		valid.Range(article.State, 0, 1, "state").Message("状态只能为 0、1")
+	}
+	if article.TagID > 0 {
+		valid.Min(article.TagID, 1, "tag_id").Message("标签 ID 必须大于 0")
+	}
+
+	if valid.HasErrors() {
+		app.MarkErrors(valid.Errors)
+		return valid.Errors[0].Message
+	}
+
+	return ""
 }
 
 // 创建文章数据校验

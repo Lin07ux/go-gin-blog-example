@@ -31,7 +31,7 @@ CREATE TABLE `articles` (
   INDEX `idx_tag_id` (`tag_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='文章管理';
 
-CREATE TABLE `auth` (
+CREATE TABLE `auths` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `username` varchar(50) DEFAULT '' COMMENT '账号',
   `password` varchar(50) DEFAULT '' COMMENT '密码',
