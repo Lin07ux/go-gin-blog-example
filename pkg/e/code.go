@@ -12,6 +12,7 @@ const (
 	ErrorGetArticleFail    = 11001
 	ErrorGetArticlesFail   = 11002
 	ErrorCountArticlesFail = 11003
+	ErrorDeleteArticleFail = 11004
 
 	ErrorAuthCheckTokenFail    = 20001
 	ErrorAuthCheckTokenTimeout = 20002

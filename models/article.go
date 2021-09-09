@@ -18,12 +18,19 @@ type Article struct {
 }
 
 // 使用 ID 判断文章是否存在
-func ExistArticleById(id int) bool {
+func ExistArticleById(id int) (bool, error) {
 	var article Article
 
-	db.Select("id").Where("id = ?", id).First(&article)
+	err := db.Select("id").Where("id = ?", id).First(&article).Error
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return false, err
+	}
 
-	return article.ID > 0
+	if article.ID > 0 {
+		return true, nil
+	}
+
+	return false, nil
 }
 
 // 获取文章的数量
@@ -52,56 +59,30 @@ func GetArticle(id int) (*Article, error) {
 		if err == nil {
 			return article, nil
 		}
-	}
-
-	if err == gorm.ErrRecordNotFound {
-		return nil, nil
+	} else if err == gorm.ErrRecordNotFound {
+		err = nil
 	}
 
 	return nil, err
 }
 
 // 添加文章
-func AddArticle(article *Article) int {
-	db.Create(article)
+func AddArticle(article *Article) (int, error) {
+	if err := db.Create(article).Error; err != nil {
+		return 0, err
+	}
 
-	return article.ID
+	return article.ID, nil
 }
 
 // 编辑文章
-func EditArticle(id int, article *Article) bool {
-	data := make(map[string]interface{})
-	data["modified_by"] = article.ModifiedBy
-
-	if article.TagID > 0 {
-		data["tag_id"] = article.TagID
-	}
-	if article.Title != "" {
-		data["title"] = article.Title
-	}
-	if article.Cover != "" {
-		data["cover"] = article.Cover
-	}
-	if article.Desc != "" {
-		data["desc"] = article.Desc
-	}
-	if article.Content != "" {
-		data["content"] = article.Content
-	}
-	if article.State >= 0 {
-		data["state"] = article.State
-	}
-
-	db.Model(&Article{}).Where("id = ?", id).Updates(data)
-
-	return true
+func EditArticle(id int, data interface{}) error {
+	return db.Model(&Article{}).Where("id = ?", id).Updates(data).Error
 }
 
 // 删除文章
-func DeleteArticle(id int) bool {
-	db.Delete(&Article{}, id)
-
-	return true
+func DeleteArticle(id int) error {
+	return db.Delete(&Article{}, id).Error
 }
 
 // 清理全部的已删除文章

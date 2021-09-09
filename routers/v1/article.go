@@ -25,7 +25,7 @@ func GetArticles(c *gin.Context) {
 	response := app.Response{C: c}
 	articleService := services.Article{
 		TagID:    com.StrTo(c.DefaultQuery("state", "-1")).MustInt(),
-		State:    com.StrTo(c.DefaultQuery("tag_id", "0")).MustInt(),
+		State:    com.StrTo(c.DefaultQuery("tag_id", "-1")).MustInt(),
 		PageNum:  com.StrTo(c.Query("page")).MustInt(),
 		PageSize: setting.AppSetting.PageSize,
 	}
@@ -73,8 +73,7 @@ func GetArticle(c *gin.Context) {
 		return
 	}
 
-	article, err := articleService.Detail()
-	if err != nil {
+	if article, err := articleService.Detail(); err != nil {
 		response.SetStatus(http.StatusInternalServerError).Send(e.ErrorGetArticleFail, "", nil)
 	} else if article == nil {
 		response.SetStatus(http.StatusNotFound).Send(e.ErrorNotExistArticle, "", nil)
@@ -94,7 +93,7 @@ func GetArticle(c *gin.Context) {
 // @Router /api/v1/articles [post]
 func AddArticle(c *gin.Context) {
 	response := app.Response{C: c}
-	article := models.Article{
+	articleService := services.Article{
 		TagID:      com.StrTo(c.PostForm("tag_id")).MustInt(),
 		State:      com.StrTo(c.DefaultPostForm("state", "0")).MustInt(),
 		Title:      c.PostForm("title"),
@@ -104,20 +103,20 @@ func AddArticle(c *gin.Context) {
 		CreatedBy:  c.PostForm("created_by"),
 	}
 
-	if message := validateCreateArticleData(&article); message != "" {
+	if message := validateCreateArticleData(&articleService); message != "" {
 		response.SetStatus(http.StatusUnprocessableEntity).Send(e.InvalidParams, message, nil)
 		return
 	}
 
-	if ! models.ExistTagById(article.TagID) {
+	if ! models.ExistTagById(articleService.TagID) {
 		response.SetStatus(http.StatusNotFound).Send(e.ErrorNotExistTag, "", nil)
 		return
 	}
 
-	if id := models.AddArticle(&article); id > 0 {
-		response.Send(e.Success, "", map[string]int{"id": id})
-	} else {
+	if articleService.Create() <= 0 {
 		response.SetStatus(http.StatusExpectationFailed).Send(e.Error, "", nil)
+	} else {
+		response.Send(e.Success, "", map[string]int{"id": articleService.ID})
 	}
 }
 
@@ -128,27 +127,27 @@ func AddArticle(c *gin.Context) {
 // @Param desc body string false "Desc"
 // @Param content body string false "Content"
 // @Param modified_by body string true "ModifiedAt"
-// @Success 200 {object} gin.H "{"code":200,"data":{},"msg":"ok"}"
+// @Success 200 {object} app.ResponseBody "ok"
 // @Router /api/v1/articles/{id} [put]
 func EditArticle(c *gin.Context) {
-	id := com.StrTo(c.Param("id")).MustInt()
 	response := app.Response{C: c}
-	article := models.Article{
-		TagID:      com.StrTo(c.PostForm("tag_id")).MustInt(),
+	article := services.Article{
+		ID:         com.StrTo(c.Param("id")).MustInt(),
+		TagID:      com.StrTo(c.DefaultPostForm("tag_id", "0")).MustInt(),
+		State:      com.StrTo(c.DefaultPostForm("state", "-1")).MustInt(),
 		Title:      c.PostForm("title"),
 		Cover:      c.PostForm("cover"),
 		Desc:       c.PostForm("desc"),
 		Content:    c.PostForm("content"),
 		ModifiedBy: c.PostForm("modified_by"),
-		State:      com.StrTo(c.DefaultPostForm("state", "-1")).MustInt(),
 	}
 
-	if message := validateUpdateArticleData(id, &article); message != "" {
+	if message := validateUpdateArticleData(&article); message != "" {
 		response.SetStatus(http.StatusUnprocessableEntity).Send(e.InvalidParams, message, nil)
 		return
 	}
 
-	if ! models.ExistArticleById(id) {
+	if ! article.ExistsById() {
 		response.SetStatus(http.StatusNotFound).Send(e.ErrorNotExistArticle, "", nil)
 		return
 	}
@@ -158,38 +157,37 @@ func EditArticle(c *gin.Context) {
 		return
 	}
 
-	if models.EditArticle(id, &article) {
-		response.Send(e.Success, "", nil)
-	} else {
+	if ! article.Update() {
 		response.SetStatus(http.StatusExpectationFailed).Send(e.Error, "", nil)
+	} else {
+		response.Send(e.Success, "", nil)
 	}
 }
 
-// 删除文章
+// @Summary 删除文章
+// @Produce json
+// @Param id path int true "ID"
+// @Success 200 {object} app.ResponseBody "ok"
+// @Router /api/v1/articles/{id} [delete]
 func DeleteArticle(c *gin.Context) {
-	id := com.StrTo(c.Param("id")).MustInt()
+	response := app.Response{C:c}
+	articleService := services.Article{ID: com.StrTo(c.Param("id")).MustInt()}
 
-	code := e.InvalidParams
-	msg := ""
-
-	if id > 0 {
-		if models.ExistArticleById(id) {
-			models.DeleteArticle(id)
-			code = e.Success
-		} else {
-			code = e.ErrorNotExistArticle
-		}
-
-		msg = e.GetMsg(code)
-	} else {
-		msg = "文章 ID 必须大于 0"
+	if message := validateArticleId(&articleService); message != "" {
+		response.SetStatus(http.StatusNotFound).Send(e.InvalidParams, message, nil)
+		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"code": code,
-		"msg" : msg,
-		"data": make(map[string]string),
-	})
+	if ! articleService.ExistsById() {
+		response.SetStatus(http.StatusNotFound).Send(e.ErrorNotExistArticle, "", nil)
+		return
+	}
+
+	if ! articleService.Delete() {
+		response.SetStatus(http.StatusInternalServerError).Send(e.ErrorDeleteArticleFail, "", nil)
+	} else {
+		response.Send(e.Success, "", nil)
+	}
 }
 
 // 验证文章 ID
@@ -225,7 +223,7 @@ func validateArticlesQueries(article *services.Article) string {
 }
 
 // 创建文章数据校验
-func validateCreateArticleData(article *models.Article) string {
+func validateCreateArticleData(article *services.Article) string {
 	valid := validation.Validation{}
 	valid.Min(article.TagID, 1, "tag_id").Message("标签 ID 必须大于 0")
 	valid.Required(article.Title, "title").Message("文章标题不能为空")
@@ -249,9 +247,9 @@ func validateCreateArticleData(article *models.Article) string {
 }
 
 // 更新文章数据校验
-func validateUpdateArticleData(id int, article *models.Article) string {
+func validateUpdateArticleData(article *services.Article) string {
 	valid := validation.Validation{}
-	valid.Min(id, 1, "id").Message("文章 ID 必须大于 0")
+	valid.Min(article.ID, 1, "id").Message("文章 ID 必须大于 0")
 	valid.MaxSize(article.Title, 100, "title").Message("标题最长为 100 个字符")
 	valid.MaxSize(article.Cover, 255, "cover").Message("封面图片地址最长为 255 个字符")
 	valid.MaxSize(article.Desc, 255, "desc").Message("简述最长为 255 个字符")

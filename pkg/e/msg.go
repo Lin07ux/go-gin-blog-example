@@ -10,6 +10,7 @@ var MsgFlags = map[int]string {
 	ErrorGetArticleFail:         "获取文章失败",
 	ErrorGetArticlesFail:        "获取文章列表失败",
 	ErrorCountArticlesFail:      "获取文章数量失败",
+	ErrorDeleteArticleFail:      "删除文章失败",
 	ErrorAuthCheckTokenFail:     "Token 鉴权失败",
 	ErrorAuthCheckTokenTimeout:  "Token 已超时",
 	ErrorAuthTokenGenerate:      "Token 生成失败",
